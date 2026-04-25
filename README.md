@@ -1,171 +1,82 @@
-# 🧬 Bacterial Key Generator
+# 🛠️ Installation Steps
 
-An AI-powered full-stack web application that generates cryptographic keys using bacterial colony images as a natural entropy source. The system combines image processing, entropy extraction, NIST randomness testing, secure key derivation, and LLM-based interpretation to evaluate the quality of generated keys.
+## 1️⃣ Clone Repository
+```bash
+git clone https://github.com/adityakv1/bacterial-key-generator.git
+cd bacterial-key-generator
+2️⃣ Frontend Setup
+cd client
+npm install
+npm run dev
 
----
+Frontend runs at:
+http://localhost:5173
 
-# 📌 Table of Contents
+3️⃣ Backend Setup
 
-1. Project Overview  
-2. Problem Statement  
-3. Objectives  
-4. Key Features  
-5. Tech Stack  
-6. System Architecture  
-7. Workflow  
-8. Core Algorithms Used  
-9. NIST Statistical Tests  
-10. AI Interpretation Layer  
-11. Project Structure  
-12. Installation Guide  
-13. API Routes  
-14. Example Output  
-15. Future Enhancements  
-16. Author  
+Open a new terminal:
 
----
+cd backend
+npm install
+npm run dev
 
-# 📖 Project Overview
+Backend runs at:
+http://localhost:5000
 
-Conventional cryptographic systems usually depend on pseudo-random number generators or hardware entropy modules for key generation. This project explores a bio-inspired alternative approach where bacterial colony growth patterns act as a natural source of randomness.
+4️⃣ Python Setup
 
-Every bacterial image contains unpredictable spatial patterns, texture noise, colony density variation, edge structures, and grayscale irregularities. These properties are harvested as entropy and transformed into secure keys.
+Open another terminal:
 
-The platform allows users to upload bacterial images through a web interface, generate secure keys, evaluate randomness using NIST tests, and receive AI-generated technical interpretations.
+cd python
 
----
+Create Conda Environment:
 
-# ❗ Problem Statement
+conda create -n bacteria_env python=3.10
+conda activate bacteria_env
 
-Modern random number generation systems can suffer from:
+OR create venv:
 
-- Predictable pseudo-random seeds  
-- Weak entropy sources  
-- Hardware dependency  
-- Lack of explainability  
-- Limited natural randomness exploration  
+python -m venv venv
+venv\Scripts\activate
+5️⃣ Install Python Dependencies
 
-This project addresses those issues by using biological image patterns as an alternative entropy source.
+Create requirements.txt
 
----
+flask
+opencv-python
+numpy
+scipy
+cryptography
 
-# 🎯 Objectives
+Then run:
 
-- Generate secure keys from bacterial colony images  
-- Apply computer vision for entropy harvesting  
-- Perform NIST randomness validation  
-- Use AI to interpret results intelligently  
-- Store generated outputs for future reference  
-- Build a full-stack deployable application  
+pip install -r requirements.txt
+6️⃣ Run Python Service
+python app.py
 
----
+Python service runs at:
+http://localhost:8000
 
-# 🚀 Key Features
+7️⃣ Create Backend .env
 
-## 🔐 Secure Key Generation
+Inside backend/.env
 
-- Uses bacterial image entropy
-- SHA-256 based extraction
-- HKDF for secure final key derivation
-- Hexadecimal output format
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+GROQ_API_KEY=your_groq_api_key
+▶️ Final Run (Use 3 Terminals)
 
-## 🧫 Bacterial Image Upload
+Terminal 1:
 
-Users can upload:
+cd client
+npm run dev
 
-- PNG
-- JPG
-- JPEG
-- BMP
+Terminal 2:
 
-## 📊 Randomness Testing
+cd backend
+npm run dev
 
-Built-in NIST inspired tests:
+Terminal 3:
 
-- Monobit Frequency Test
-- Runs Test
-- Block Frequency Test
-
-## 🤖 AI Interpretation
-
-Uses Groq LLM to generate dynamic explanations of test results.
-
-## 💾 Database Storage
-
-Stores:
-
-- Filename
-- Generated key
-- NIST test results
-- AI summary
-- Timestamp
-
-## 🎨 Modern UI
-
-Built with:
-
-- React
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-
----
-
-# 🏗️ Tech Stack
-
-## Frontend
-
-- React.js
-- TypeScript
-- Vite
-- Axios
-- Tailwind CSS
-- shadcn/ui
-
-## Backend
-
-- Node.js
-- Express.js
-- Multer
-- Mongoose
-- MongoDB
-
-## Python Processing Engine
-
-- Flask
-- OpenCV
-- NumPy
-- SciPy
-- Cryptography
-
-## AI Layer
-
-- Groq API
-- Llama Models
-
----
-
-# 🧠 System Architecture
-
-```text
-User Uploads Image
-        ↓
-React Frontend
-        ↓
-Node.js Express API
-        ↓
-Python Flask Engine
-        ↓
-Image Processing
-        ↓
-Entropy Extraction
-        ↓
-Key Generation
-        ↓
-NIST Testing
-        ↓
-Groq AI Interpretation
-        ↓
-MongoDB Storage
-        ↓
-Frontend Displays Results
+cd python
+python app.py
