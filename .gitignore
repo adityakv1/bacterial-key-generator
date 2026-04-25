@@ -1,0 +1,12 @@
+node_modules/
+.env
+__pycache__/
+*.pyc
+uploads/
+dist/
+build/
+.temp/
+.vscode/
+.DS_Store
+client/node_modules/
+backend/node_modules/
