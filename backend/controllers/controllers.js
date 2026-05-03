@@ -17,10 +17,13 @@ const uploadImage = async (req, res) => {
       "image",
       fs.createReadStream(req.file.path)
     );
+    if (req.body.method) {
+      formData.append("method", req.body.method);
+    }
 
     // Python API
     const response = await axios.post(
-      "http://localhost:8000/generate",
+      "http://127.0.0.1:8000/generate",
       formData,
       {
         headers: formData.getHeaders()
@@ -52,16 +55,23 @@ Write one short professional paragraph about how strong the generated key is.
 
     const saved = await Key.create({
       filename: req.file.filename,
-      generatedKey: result.generatedKey,
+      bitKey: result.bitKey,
+      hexKey: result.hexKey,
       tests: result.tests,
       summary
     });
 
-    res.json({
-      generatedKey: saved.generatedKey,
+    const responsePayload = {
+      bitKey: result.bitKey || result.generatedKey,
+      hexKey: result.hexKey || result.generatedKey,
       tests: saved.tests,
       summary: saved.summary
-    });
+    };
+    if (result.visualization) {
+      responsePayload.visualization = result.visualization;
+    }
+
+    res.json(responsePayload);
 
   } catch (error) {
     console.log(error);
@@ -72,4 +82,38 @@ Write one short professional paragraph about how strong the generated key is.
   }
 };
 
-module.exports = { uploadImage };
+const encryptData = async (req, res) => {
+  try {
+    const { key, text } = req.body;
+    const formData = new FormData();
+    formData.append("key", key);
+    formData.append("text", text);
+
+    const response = await axios.post("http://127.0.0.1:8000/encrypt", formData, {
+      headers: formData.getHeaders()
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const decryptData = async (req, res) => {
+  try {
+    const { key, encrypted } = req.body;
+    const formData = new FormData();
+    formData.append("key", key);
+    formData.append("encrypted", encrypted);
+
+    const response = await axios.post("http://127.0.0.1:8000/decrypt", formData, {
+      headers: formData.getHeaders()
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { uploadImage, encryptData, decryptData };

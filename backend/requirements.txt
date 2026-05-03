@@ -1,0 +1,8 @@
+flask
+opencv-python
+numpy<2.0.0
+scipy
+cryptography
+scikit-image
+matplotlib
+pycryptodome

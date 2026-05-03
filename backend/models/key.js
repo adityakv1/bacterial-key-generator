@@ -2,7 +2,8 @@ const mongoose = require("mongoose");
 
 const keySchema = new mongoose.Schema({
   filename: String,
-  generatedKey: String,
+  bitKey: String,
+  hexKey: String,
   tests: Array,
   summary: String,
   createdAt: {
