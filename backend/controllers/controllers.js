@@ -17,7 +17,7 @@ const uploadImage = async (req, res) => {
     const imagePath = req.file.path;
 
     // Execute Python script for key generation
-    const pythonCommand = `python python/app.py generate "${imagePath}" ${method}`;
+    const pythonCommand = `python3 python/app.py generate "${imagePath}" ${method}`;
     exec(pythonCommand, { cwd: path.join(__dirname, "..") }, async (error, stdout, stderr) => {
       if (error) {
         console.error("Python exec error:", error);
@@ -92,7 +92,7 @@ const encryptData = async (req, res) => {
     const { key, text } = req.body;
 
     // Execute Python script for encryption
-    const pythonCommand = `python python/app.py encrypt "${key}" "${text}"`;
+    const pythonCommand = `python3 python/app.py encrypt "${key}" "${text}"`;
     exec(pythonCommand, { cwd: path.join(__dirname, "..") }, (error, stdout, stderr) => {
       if (error) {
         console.error("Python exec error:", error);
@@ -125,7 +125,7 @@ const decryptData = async (req, res) => {
     const { key, encrypted } = req.body;
 
     // Execute Python script for decryption
-    const pythonCommand = `python python/app.py decrypt "${key}" "${encrypted}"`;
+    const pythonCommand = `python3 python/app.py decrypt "${key}" "${encrypted}"`;
     exec(pythonCommand, { cwd: path.join(__dirname, "..") }, (error, stdout, stderr) => {
       if (error) {
         console.error("Python exec error:", error);
