@@ -3,6 +3,8 @@ const fs = require("fs");
 const FormData = require("form-data");
 const Key = require("../models/Key");
 const OpenAI = require("openai");
+const { exec } = require("child_process");
+const path = require("path");
 
 const client = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
@@ -11,28 +13,32 @@ const client = new OpenAI({
 
 const uploadImage = async (req, res) => {
   try {
-    const formData = new FormData();
+    const method = req.body.method || "1";
+    const imagePath = req.file.path;
 
-    formData.append(
-      "image",
-      fs.createReadStream(req.file.path)
-    );
-    if (req.body.method) {
-      formData.append("method", req.body.method);
-    }
-
-    // Python API
-    const response = await axios.post(
-      "http://127.0.0.1:8000/generate",
-      formData,
-      {
-        headers: formData.getHeaders()
+    // Execute Python script for key generation
+    const pythonCommand = `python python/app.py generate "${imagePath}" ${method}`;
+    exec(pythonCommand, { cwd: path.join(__dirname, "..") }, async (error, stdout, stderr) => {
+      if (error) {
+        console.error("Python exec error:", error);
+        console.error("stderr:", stderr);
+        return res.status(500).json({ message: error.message });
       }
-    );
 
-    const result = response.data;
+      let result;
+      try {
+        result = JSON.parse(stdout.trim());
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        console.error("stdout:", stdout);
+        return res.status(500).json({ message: "Failed to parse Python output" });
+      }
 
-    const prompt = `
+      if (result.error) {
+        return res.status(500).json({ message: result.error });
+      }
+
+      const prompt = `
 You are a cybersecurity and cryptography expert.
 
 Interpret these NIST randomness results:
@@ -42,40 +48,39 @@ ${JSON.stringify(result.tests, null, 2)}
 Write one short professional paragraph about how strong the generated key is.
 `;
 
-    const ai = await client.chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "user", content: prompt }
-      ],
-      temperature: 0.4
+      const ai = await client.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.4
+      });
+
+      const summary = ai.choices[0].message.content;
+
+      const saved = await Key.create({
+        filename: req.file.filename,
+        bitKey: result.bitKey,
+        hexKey: result.hexKey,
+        tests: result.tests,
+        summary
+      });
+
+      const responsePayload = {
+        bitKey: result.bitKey || result.generatedKey,
+        hexKey: result.hexKey || result.generatedKey,
+        tests: saved.tests,
+        summary: saved.summary
+      };
+      if (result.visualization) {
+        responsePayload.visualization = result.visualization;
+      }
+
+      res.json(responsePayload);
     });
-
-    const summary =
-      ai.choices[0].message.content;
-
-    const saved = await Key.create({
-      filename: req.file.filename,
-      bitKey: result.bitKey,
-      hexKey: result.hexKey,
-      tests: result.tests,
-      summary
-    });
-
-    const responsePayload = {
-      bitKey: result.bitKey || result.generatedKey,
-      hexKey: result.hexKey || result.generatedKey,
-      tests: saved.tests,
-      summary: saved.summary
-    };
-    if (result.visualization) {
-      responsePayload.visualization = result.visualization;
-    }
-
-    res.json(responsePayload);
 
   } catch (error) {
     console.log(error);
-
     res.status(500).json({
       message: error.message
     });
@@ -85,15 +90,31 @@ Write one short professional paragraph about how strong the generated key is.
 const encryptData = async (req, res) => {
   try {
     const { key, text } = req.body;
-    const formData = new FormData();
-    formData.append("key", key);
-    formData.append("text", text);
 
-    const response = await axios.post("http://127.0.0.1:8000/encrypt", formData, {
-      headers: formData.getHeaders()
+    // Execute Python script for encryption
+    const pythonCommand = `python python/app.py encrypt "${key}" "${text}"`;
+    exec(pythonCommand, { cwd: path.join(__dirname, "..") }, (error, stdout, stderr) => {
+      if (error) {
+        console.error("Python exec error:", error);
+        console.error("stderr:", stderr);
+        return res.status(500).json({ error: error.message });
+      }
+
+      let result;
+      try {
+        result = JSON.parse(stdout.trim());
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        console.error("stdout:", stdout);
+        return res.status(500).json({ error: "Failed to parse Python output" });
+      }
+
+      if (result.error) {
+        return res.status(500).json({ error: result.error });
+      }
+
+      res.json(result);
     });
-
-    res.json(response.data);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -102,15 +123,31 @@ const encryptData = async (req, res) => {
 const decryptData = async (req, res) => {
   try {
     const { key, encrypted } = req.body;
-    const formData = new FormData();
-    formData.append("key", key);
-    formData.append("encrypted", encrypted);
 
-    const response = await axios.post("http://127.0.0.1:8000/decrypt", formData, {
-      headers: formData.getHeaders()
+    // Execute Python script for decryption
+    const pythonCommand = `python python/app.py decrypt "${key}" "${encrypted}"`;
+    exec(pythonCommand, { cwd: path.join(__dirname, "..") }, (error, stdout, stderr) => {
+      if (error) {
+        console.error("Python exec error:", error);
+        console.error("stderr:", stderr);
+        return res.status(500).json({ error: error.message });
+      }
+
+      let result;
+      try {
+        result = JSON.parse(stdout.trim());
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        console.error("stdout:", stdout);
+        return res.status(500).json({ error: "Failed to parse Python output" });
+      }
+
+      if (result.error) {
+        return res.status(500).json({ error: result.error });
+      }
+
+      res.json(result);
     });
-
-    res.json(response.data);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

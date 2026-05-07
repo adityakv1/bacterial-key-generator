@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify
+import sys
+import json
 import os
 import cv2
 import numpy as np
@@ -21,9 +22,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from skimage.feature import graycomatrix, graycoprops
 from skimage.measure import label, regionprops
-
-app = Flask(__name__)
-
 
 # =====================================================
 # COMMON PREPROCESS
@@ -336,21 +334,11 @@ def visualize_m2(gray, binary, feats, parts, bits, sha_bits):
 
 
 # =====================================================
-# ROUTE
+# CLI FUNCTIONS
 # =====================================================
-@app.route("/generate", methods=["POST"])
-def generate():
+def generate(image_path, method="1"):
     try:
-        if "image" not in request.files:
-            return jsonify({"error": "No image uploaded"}), 400
-
-        file = request.files["image"]
-        method = request.form.get("method", "1")
-        
-        path = "temp_upload.png"
-        file.save(path)
-
-        gray, binary = preprocess(path)
+        gray, binary = preprocess(image_path)
 
         if method == "1":
             colonies = detect_colonies(binary)
@@ -410,9 +398,6 @@ def generate():
                 
             visualization = None
 
-        if os.path.exists(path):
-            os.remove(path)
-
         response_data = {
             "bitKey": key_bit,
             "hexKey": key_hex,
@@ -423,10 +408,10 @@ def generate():
         if visualization:
             response_data["visualization"] = visualization
 
-        return jsonify(response_data)
+        return response_data
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return {"error": str(e)}
 
 
 # =====================================================
@@ -463,12 +448,8 @@ def visualize_aes(original_bytes, encrypted_bytes):
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode('utf-8')
 
-@app.route("/encrypt", methods=["POST"])
-def encrypt():
+def encrypt_text(key_hex, text):
     try:
-        key_hex = request.form.get("key")
-        text = request.form.get("text", "")
-        
         # Use first 32 bytes of hex key for AES-256
         key = bytes.fromhex(key_hex)[:32]
         iv = get_random_bytes(16)
@@ -481,19 +462,15 @@ def encrypt():
         result_b64 = base64.b64encode(iv + encrypted).decode('utf-8')
         vis_b64 = visualize_aes(data, encrypted)
         
-        return jsonify({
+        return {
             "encrypted": result_b64,
             "visualization": vis_b64
-        })
+        }
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return {"error": str(e)}
 
-@app.route("/decrypt", methods=["POST"])
-def decrypt():
+def decrypt_text(key_hex, encrypted_b64):
     try:
-        key_hex = request.form.get("key")
-        encrypted_b64 = request.form.get("encrypted")
-        
         key = bytes.fromhex(key_hex)[:32]
         raw = base64.b64decode(encrypted_b64)
         
@@ -503,11 +480,46 @@ def decrypt():
         cipher = AES.new(key, AES.MODE_CBC, iv)
         decrypted = unpad(cipher.decrypt(ct), AES.block_size)
         
-        return jsonify({
+        return {
             "decrypted": decrypted.decode('utf-8')
-        })
+        }
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return {"error": str(e)}
 
 if __name__ == "__main__":
-    app.run(port=8000, debug=True, use_reloader=False)
+    if len(sys.argv) < 2:
+        print(json.dumps({"error": "Usage: python app.py <command> [args...]"}))
+        sys.exit(1)
+
+    command = sys.argv[1]
+
+    if command == "generate":
+        if len(sys.argv) < 3:
+            print(json.dumps({"error": "Usage: python app.py generate <image_path> [method]"}))
+            sys.exit(1)
+        image_path = sys.argv[2]
+        method = sys.argv[3] if len(sys.argv) > 3 else "1"
+        result = generate(image_path, method)
+        print(json.dumps(result))
+
+    elif command == "encrypt":
+        if len(sys.argv) < 4:
+            print(json.dumps({"error": "Usage: python app.py encrypt <key> <text>"}))
+            sys.exit(1)
+        key = sys.argv[2]
+        text = sys.argv[3]
+        result = encrypt_text(key, text)
+        print(json.dumps(result))
+
+    elif command == "decrypt":
+        if len(sys.argv) < 4:
+            print(json.dumps({"error": "Usage: python app.py decrypt <key> <encrypted>"}))
+            sys.exit(1)
+        key = sys.argv[2]
+        encrypted = sys.argv[3]
+        result = decrypt_text(key, encrypted)
+        print(json.dumps(result))
+
+    else:
+        print(json.dumps({"error": f"Unknown command: {command}"}))
+        sys.exit(1)
