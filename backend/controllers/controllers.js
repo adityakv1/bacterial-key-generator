@@ -152,5 +152,7 @@ const decryptData = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+console.log("STDOUT:", stdout);
+console.log("STDERR:", stderr);
 
 module.exports = { uploadImage, encryptData, decryptData };
