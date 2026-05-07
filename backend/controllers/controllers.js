@@ -1,7 +1,7 @@
 const axios = require("axios");
 const fs = require("fs");
 const FormData = require("form-data");
-const Key = require("../models/Key");
+const Key = require("../models/key");
 const OpenAI = require("openai");
 const { exec } = require("child_process");
 const path = require("path");
