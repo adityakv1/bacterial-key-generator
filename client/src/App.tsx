@@ -40,10 +40,10 @@ function App() {
     try {
       setLoading(true);
 
-      const res = await axios.post<ResponseData>(
-        "http://localhost:5001/api/keys/upload",
-        formData
-      );
+const res = await axios.post<ResponseData>(
+  "https://bacterial-key.onrender.com/api/keys/upload",
+  formData
+);
 
       console.log("BACKEND RESPONSE:", res.data);
 
@@ -69,7 +69,7 @@ function App() {
 
     try {
       setEncrypting(true);
-      const res = await axios.post("http://localhost:5001/api/keys/encrypt", {
+      const res = await axios.post("https://bacterial-key.onrender.com/api/keys/encrypt", {
         key: data.hexKey,
         text: aesText
       });
@@ -87,7 +87,7 @@ function App() {
 
     try {
       setDecrypting(true);
-      const res = await axios.post("http://localhost:5001/api/keys/decrypt", {
+      const res = await axios.post("https://bacterial-key.onrender.com/api/keys/decrypt", {
         key: decryptKeyInput,
         encrypted: encryptedData
       });
