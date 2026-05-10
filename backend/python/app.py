@@ -519,6 +519,7 @@ if __name__ == "__main__":
         encrypted = sys.argv[3]
         result = decrypt_text(key, encrypted)
         print(json.dumps(result))
+        print("hi")
 
     else:
         print(json.dumps({"error": f"Unknown command: {command}"}))
