@@ -4,6 +4,10 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads");
+}
+
 const connectDB = require("./config/db");
 
 connectDB();
