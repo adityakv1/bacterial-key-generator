@@ -1,3 +1,5 @@
+flask
+flask-cors
 opencv-python-headless
 numpy
 scipy
@@ -5,3 +7,4 @@ cryptography
 matplotlib
 scikit-image
 pycryptodome
+gunicorn
