@@ -41,7 +41,7 @@ function App() {
       setLoading(true);
 
 const res = await axios.post<ResponseData>(
-  "https://bacterial-key.onrender.com/api/keys/upload",
+  "https://bacterial-key-generator-4.onrender.com/api/keys/upload",
   formData
 );
 
@@ -69,7 +69,7 @@ const res = await axios.post<ResponseData>(
 
     try {
       setEncrypting(true);
-      const res = await axios.post("https://bacterial-key.onrender.com/api/keys/encrypt", {
+      const res = await axios.post("https://bacterial-key-generator-4.onrender.com/api/keys/encrypt", {
         key: data.hexKey,
         text: aesText
       });
@@ -87,7 +87,7 @@ const res = await axios.post<ResponseData>(
 
     try {
       setDecrypting(true);
-      const res = await axios.post("https://bacterial-key.onrender.com/api/keys/decrypt", {
+      const res = await axios.post("https://bacterial-key-generator-4.onrender.com/api/keys/decrypt", {
         key: decryptKeyInput,
         encrypted: encryptedData
       });
