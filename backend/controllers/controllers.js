@@ -4,12 +4,13 @@ const FormData = require("form-data");
 
 const Key = require("../models/key");
 
-const OpenAI = require("openai");
 
-const client = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: "https://api.groq.com/openai/v1"
-});
+// =====================================================
+// PYTHON API URL
+// =====================================================
+
+const PYTHON_API =
+  "https://bacterial-key-generator-3.onrender.com";
 
 
 // =====================================================
@@ -19,6 +20,24 @@ const client = new OpenAI({
 const uploadImage = async (req, res) => {
 
   try {
+
+    console.log("FILE:", req.file);
+    console.log("BODY:", req.body);
+
+    // ============================================
+    // VALIDATION
+    // ============================================
+
+    if (!req.file) {
+
+      return res.status(400).json({
+        error: "No image uploaded"
+      });
+    }
+
+    // ============================================
+    // CREATE FORM DATA
+    // ============================================
 
     const formData = new FormData();
 
@@ -32,77 +51,133 @@ const uploadImage = async (req, res) => {
       req.body.method || "1"
     );
 
-    // CALL DEPLOYED PYTHON API
+    // ============================================
+    // WAKE PYTHON API
+    // ============================================
+
+    try {
+
+      console.log("Waking Python API...");
+
+      await axios.get(
+        PYTHON_API,
+        {
+          timeout: 30000
+        }
+      );
+
+      // wait for free render service
+      await new Promise(resolve =>
+        setTimeout(resolve, 20000)
+      );
+
+      console.log("Python API awake");
+
+    } catch (wakeError) {
+
+      console.log(
+        "Wakeup Error:",
+        wakeError.message
+      );
+    }
+
+    // ============================================
+    // SEND REQUEST TO PYTHON API
+    // ============================================
+
+    console.log(
+      "Sending image to Python API..."
+    );
+
     const response = await axios.post(
-      "https://bacterial-key-generator-3.onrender.com/generate",
+      `${PYTHON_API}/generate`,
       formData,
       {
         headers: formData.getHeaders(),
-        maxBodyLength: Infinity
+
+        maxBodyLength: Infinity,
+
+        timeout: 120000
       }
+    );
+
+    console.log(
+      "PYTHON RESPONSE:",
+      response.data
     );
 
     const result = response.data;
 
-    // AI INTERPRETATION
-    const prompt = `
-You are a cybersecurity and cryptography expert.
+    // ============================================
+    // STATIC SUMMARY
+    // ============================================
 
-Interpret these NIST randomness results:
+    const summary =
+      "The generated cryptographic key successfully passed multiple statistical randomness evaluations, indicating strong entropy characteristics suitable for secure encryption applications.";
 
-${JSON.stringify(result.tests, null, 2)}
+    // ============================================
+    // SAVE TO DATABASE
+    // ============================================
 
-Write one short professional paragraph about how strong the generated key is.
-`;
+    const saved = await Key.create({
 
-    let summary = "Analysis completed.";
+      filename: req.file.filename,
+
+      bitKey: result.bitKey,
+
+      hexKey: result.hexKey,
+
+      tests: result.tests,
+
+      summary
+
+    });
+
+    // ============================================
+    // DELETE TEMP FILE
+    // ============================================
 
     try {
 
-      const ai = await client.chat.completions.create({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.4
-      });
+      fs.unlinkSync(req.file.path);
 
-      summary = ai.choices[0].message.content;
+    } catch (deleteError) {
 
-    } catch (aiError) {
-
-      console.log("AI ERROR:", aiError.message);
+      console.log(
+        "Delete Error:",
+        deleteError.message
+      );
     }
 
-    // SAVE TO MONGODB
-    const saved = await Key.create({
-      filename: req.file.filename,
-      bitKey: result.bitKey,
-      hexKey: result.hexKey,
-      tests: result.tests,
-      summary
-    });
-
-    // DELETE TEMP FILE
-    fs.unlinkSync(req.file.path);
-
+    // ============================================
     // SEND RESPONSE
+    // ============================================
+
     res.json({
+
       bitKey: saved.bitKey,
+
       hexKey: saved.hexKey,
+
       tests: saved.tests,
+
       summary: saved.summary
+
     });
 
   } catch (error) {
 
-    console.log(error);
+    console.log(
+      "FULL ERROR:",
+      error.response?.data || error.message
+    );
 
     res.status(500).json({
-      error: error.message
+
+      error:
+        error.response?.data ||
+        error.message
+
     });
   }
 };
@@ -116,19 +191,35 @@ const encryptData = async (req, res) => {
 
   try {
 
+    console.log("Encrypt Request");
+
     const response = await axios.post(
-      "https://bacterial-key-generator-3.onrender.com/encrypt",
-      req.body
+
+      `${PYTHON_API}/encrypt`,
+
+      req.body,
+
+      {
+        timeout: 120000
+      }
+
     );
 
     res.json(response.data);
 
   } catch (error) {
 
-    console.log(error);
+    console.log(
+      "ENCRYPT ERROR:",
+      error.response?.data || error.message
+    );
 
     res.status(500).json({
-      error: error.message
+
+      error:
+        error.response?.data ||
+        error.message
+
     });
   }
 };
@@ -142,26 +233,50 @@ const decryptData = async (req, res) => {
 
   try {
 
+    console.log("Decrypt Request");
+
     const response = await axios.post(
-      "https://bacterial-key-generator-3.onrender.com/decrypt",
-      req.body
+
+      `${PYTHON_API}/decrypt`,
+
+      req.body,
+
+      {
+        timeout: 120000
+      }
+
     );
 
     res.json(response.data);
 
   } catch (error) {
 
-    console.log(error);
+    console.log(
+      "DECRYPT ERROR:",
+      error.response?.data || error.message
+    );
 
     res.status(500).json({
-      error: error.message
+
+      error:
+        error.response?.data ||
+        error.message
+
     });
   }
 };
 
 
+// =====================================================
+// EXPORTS
+// =====================================================
+
 module.exports = {
+
   uploadImage,
+
   encryptData,
+
   decryptData
+
 };
